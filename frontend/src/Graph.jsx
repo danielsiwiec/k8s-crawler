@@ -1,9 +1,8 @@
 import * as d3 from "d3";
 import React, { useState, useEffect, useRef } from 'react';
 
-export default function Graph({suits}) {
+export default function Graph({graph}) {
 
-  const [data, setData] = useState(suits);
   const ref = useRef()
   const width = 1500;
   const height = 800;
@@ -15,25 +14,25 @@ export default function Graph({suits}) {
         A${r},${r} 0 0,1 ${d.target.x},${d.target.y}
       `;
   }
-  
+
   const drag = (simulation) => {
     function dragstarted(event, d) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;
       d.fy = d.y;
     }
-  
+
     function dragged(event, d) {
       d.fx = event.x;
       d.fy = event.y;
     }
-  
+
     function dragended(event, d) {
       if (!event.active) simulation.alphaTarget(0);
       d.fx = null;
       d.fy = null;
     }
-  
+
     return d3
       .drag()
       .on("start", dragstarted)
@@ -42,30 +41,30 @@ export default function Graph({suits}) {
   };
 
   useEffect(() => {
-    
 
-    const types = Array.from(new Set(data.map((d) => d.type)));
+
+    const types = Array.from(new Set(graph.map((d) => d.type)));
     const nodes = Array.from(
-      new Set(data.flatMap((l) => [l.source, l.target])),
+      new Set(graph.flatMap((l) => [l.source, l.target])),
       (id) => ({ id })
     );
-    const links = data.map((d) => Object.create(d));
-    
+    const links = graph.map((d) => Object.create(d));
+
     const color = d3.scaleOrdinal(types, d3.schemeCategory10);
-    
+
     const simulation = d3
       .forceSimulation(nodes)
       .force("link", d3.forceLink(links).id((d) => d.id))
       .force("charge", d3.forceManyBody().strength(-800))
       .force("x", d3.forceX())
       .force("y", d3.forceY());
-    
+
     const svg = d3.select(ref.current)
       .attr("viewBox", [-width / 2, -height / 2, width, height])
       .attr("width", width)
       .attr("height", height)
       .attr("style", "max-width: 100%; height: auto; font: 12px sans-serif;");
-    
+
     svg.selectAll("*").remove()
 
     // Per-type markers, as they don't inherit styles.
@@ -84,7 +83,7 @@ export default function Graph({suits}) {
       .append("path")
       .attr("fill", color)
       .attr("d", "M0,-5L10,0L0,5");
-    
+
     const link = svg
       .append("g")
       .attr("fill", "none")
@@ -94,7 +93,7 @@ export default function Graph({suits}) {
       .join("path")
       .attr("stroke", (d) => color(d.type))
       .attr("marker-end", (d) => `url(${new URL(`#arrow-${d.type}`, location)})`);
-    
+
     const node = svg
       .append("g")
       .attr("fill", "currentColor")
@@ -104,13 +103,13 @@ export default function Graph({suits}) {
       .data(nodes)
       .join("g")
       .call(drag(simulation));
-    
+
     node
       .append("circle")
       .attr("stroke", "white")
       .attr("stroke-width", 1.5)
       .attr("r", 4);
-    
+
     node
       .append("text")
       .attr("x", 8)
@@ -121,17 +120,17 @@ export default function Graph({suits}) {
       .attr("fill", "none")
       .attr("stroke", "white")
       .attr("stroke-width", 3);
-    
+
     simulation.on("tick", () => {
       link.attr("d", linkArc);
       node.attr("transform", (d) => `translate(${d.x},${d.y})`);
     });
-    
+
     Object.assign(svg.node(), { scales: { color } });
   })
-  
-  
-  
+
+
+
   return <svg ref={ref} width={width} height={height} />
-  
+
 }
