@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Any
 
 from kubernetes import client, config
 from kubernetes.client import V1Pod, V1Service, V1Deployment
@@ -17,21 +17,19 @@ class KubeClient:
 
 
 class KubeResource(ABC):
+    resource: Any
+    type: str
+
+    @property
+    def name(self) -> str:
+        return self.resource.metadata.name
+
+    @property
+    def id(self) -> str:
+        return f'{self.type}:{self.name}'
 
     def to_node(self) -> Node:
-        return Node(name=self.name(), type=self.type(), id=self.id())
-
-    def id(self) -> str:
-        return f'{self.type()}:{self.name()}'
-
-    @abstractmethod
-    def name(self) -> str:
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def type() -> str:
-        pass
+        return Node(name=self.name, type=self.type, id=self.id)
 
     @staticmethod
     @abstractmethod
@@ -41,50 +39,32 @@ class KubeResource(ABC):
 
 @dataclass
 class Pod(KubeResource):
+    type = 'pod'
     resource: V1Pod
 
     @staticmethod
     def find(kube_client: KubeClient, namespace: str) -> list['Pod']:
         return [Pod(resource=item) for item in kube_client.core_client.list_namespaced_pod(namespace).items]
 
-    def name(self) -> str:
-        return self.resource.metadata.name
-
-    @staticmethod
-    def type() -> str:
-        return 'pod'
-
 
 @dataclass
 class Deployment(KubeResource):
+    type = 'deployment'
     resource: V1Deployment
 
     @staticmethod
     def find(kube_client: KubeClient, namespace: str) -> list['Deployment']:
         return [Deployment(resource=item) for item in kube_client.app_client.list_namespaced_deployment(namespace).items]
 
-    def name(self) -> str:
-        return self.resource.metadata.name
-
-    @staticmethod
-    def type() -> str:
-        return 'deployment'
-
 
 @dataclass
 class Service(KubeResource):
+    type = 'service'
     resource: V1Service
 
     @staticmethod
     def find(kube_client: KubeClient, namespace: str):
         return [Service(resource=item) for item in kube_client.core_client.list_namespaced_service(namespace).items]
-
-    def name(self) -> str:
-        return self.resource.metadata.name
-
-    @staticmethod
-    def type() -> str:
-        return 'service'
 
 
 class KubeRelationship(ABC):
@@ -92,7 +72,7 @@ class KubeRelationship(ABC):
     target: KubeResource
 
     def to_link(self) -> Link:
-        return Link(source=self.source.id(), target=self.target.id())
+        return Link(source=self.source.id, target=self.target.id)
 
     @staticmethod
     @abstractmethod
