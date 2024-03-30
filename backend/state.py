@@ -11,7 +11,7 @@ class GraphState:
 
     def update_from_env(self, env: KubeEnvironment):
         self.nodes = [resource.to_node() for resource in env.resources]
-        self.links = [relationship.to_link() for relationship in env.relationships()]
+        self.links = [relationship.to_link() for relationship in env.relationships]
 
     def serialize(self):
         return {

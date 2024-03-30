@@ -106,7 +106,7 @@ class Service(KubeResource):
         return 'service'
 
 
-class Relationship(ABC):
+class KubeRelationship(ABC):
     source: KubeResource
     target: KubeResource
 
@@ -115,12 +115,17 @@ class Relationship(ABC):
 
     @staticmethod
     @abstractmethod
-    def find(env: 'KubeEnvironment') -> list['KubeResource']:
+    def fetch_into(env: 'KubeEnvironment'):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def find(env: 'KubeEnvironment') -> list['KubeRelationship']:
         pass
 
 
 @dataclass
-class PodToDeployment(Relationship):
+class PodToDeployment(KubeRelationship):
     source: Pod
     target: Deployment
 
@@ -134,12 +139,16 @@ class PodToDeployment(Relationship):
         return relationships
 
     @staticmethod
+    def fetch_into(env: 'KubeEnvironment'):
+        env.relationships.extend(PodToDeployment.find(env=env))
+
+    @staticmethod
     def __pod_matches_deployment(pod: Pod, deployment: Deployment) -> bool:
         return all(pod.resource.metadata.labels.get(key, None) == val for key, val in deployment.resource.spec.template.metadata.labels.items())
 
 
 @dataclass
-class ServiceToPod(Relationship):
+class ServiceToPod(KubeRelationship):
     source: Pod
     target: Service
 
@@ -153,6 +162,10 @@ class ServiceToPod(Relationship):
         return relationships
 
     @staticmethod
+    def fetch_into(env: 'KubeEnvironment'):
+        env.relationships.extend(ServiceToPod.find(env=env))
+
+    @staticmethod
     def __pod_matches_service(pod: Pod, service: Service) -> bool:
         return all(pod.resource.metadata.labels.get(key, None) == val for key, val in service.resource.spec.selector.items())
 
@@ -160,6 +173,4 @@ class ServiceToPod(Relationship):
 @dataclass
 class KubeEnvironment:
     resources: list[KubeResource] = field(default_factory=list)
-
-    def relationships(self) -> list[Relationship]:
-        return ServiceToPod.find(self) + PodToDeployment.find(self)
+    relationships: list[KubeRelationship] = field(default_factory=list)
