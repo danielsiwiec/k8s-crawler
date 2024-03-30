@@ -1,12 +1,20 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+from k8s import KubeClient
+from state import GraphState
+import threading
 
 app = FastAPI()
+registered_namespace = "otel-demo"
+state = GraphState()
 
 
 @app.get("/api/graph")
 async def read_item():
-    return [
+    return state.graph
+
+
+def start_crawler():
+    state.graph = [
         {
             "source": "Microsoft",
             "target": "Amazon",
@@ -27,6 +35,21 @@ async def read_item():
             "target": "Apple",
             "type": "suit",
         },
+        {
+            "source": "NXD",
+            "target": "Tesla",
+            "type": "suit",
+        },
+        {
+            "source": "NXD",
+            "target": "Apple",
+            "type": "suit",
+        },
     ]
 
-# app.mount("/", StaticFiles(directory="../frontend/build", html=True), name="static")
+
+crawler_thread = threading.Thread(target=start_crawler)
+crawler_thread.start()
+
+# client = KubeClient()
+# client.list_pods(namespace=registered_namespace)

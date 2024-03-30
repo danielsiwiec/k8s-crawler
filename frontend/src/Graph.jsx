@@ -1,136 +1,75 @@
-import * as d3 from "d3";
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useEffect, useRef} from 'react';
+import * as d3 from 'd3';
 
-export default function Graph({graph}) {
-
-  const ref = useRef()
+export default function Graph({data}) {
+  const svgRef = useRef(null);
   const width = 1500;
   const height = 800;
 
-  function linkArc(d) {
-    const r = Math.hypot(d.target.x - d.source.x, d.target.y - d.source.y);
-    return `
-        M${d.source.x},${d.source.y}
-        A${r},${r} 0 0,1 ${d.target.x},${d.target.y}
-      `;
-  }
-
-  const drag = (simulation) => {
-    function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      d.fx = d.x;
-      d.fy = d.y;
-    }
-
-    function dragged(event, d) {
-      d.fx = event.x;
-      d.fy = event.y;
-    }
-
-    function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
-    }
-
-    return d3
-      .drag()
-      .on("start", dragstarted)
-      .on("drag", dragged)
-      .on("end", dragended);
-  };
+  d3.select(svgRef.current)
+    .append("g").attr("id", "nodes")
+    .append("g").attr("id", "links")
 
   useEffect(() => {
+    if (!data) return;
 
-
-    const types = Array.from(new Set(graph.map((d) => d.type)));
-    const nodes = Array.from(
-      new Set(graph.flatMap((l) => [l.source, l.target])),
-      (id) => ({ id })
-    );
-    const links = graph.map((d) => Object.create(d));
-
-    const color = d3.scaleOrdinal(types, d3.schemeCategory10);
+    const svg = d3.select(svgRef.current)
 
     const simulation = d3
-      .forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id((d) => d.id))
-      .force("charge", d3.forceManyBody().strength(-800))
-      .force("x", d3.forceX())
-      .force("y", d3.forceY());
+      .forceSimulation(data.nodes)
+      .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .alpha(2)
+      .alphaDecay(0.05);
 
-    const svg = d3.select(ref.current)
-      .attr("viewBox", [-width / 2, -height / 2, width, height])
-      .attr("width", width)
-      .attr("height", height)
-      .attr("style", "max-width: 100%; height: auto; font: 12px sans-serif;");
+    const selectedLinks = svg
+      .select('#links')
+      .selectAll('.link')
+      .data(data.links)
 
-    svg.selectAll("*").remove()
+    const link = selectedLinks
+      .enter()
+      .append('line')
+      .attr('stroke', 'black')
+      .attr('class', 'link');
 
-    // Per-type markers, as they don't inherit styles.
-    svg
-      .append("defs")
-      .selectAll("marker")
-      .data(types)
-      .join("marker")
-      .attr("id", (d) => `arrow-${d}`)
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 15)
-      .attr("refY", -0.5)
-      .attr("markerWidth", 6)
-      .attr("markerHeight", 6)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("fill", color)
-      .attr("d", "M0,-5L10,0L0,5");
+    selectedLinks.exit().remove()
 
-    const link = svg
-      .append("g")
-      .attr("fill", "none")
-      .attr("stroke-width", 1.5)
-      .selectAll("path")
-      .data(links)
-      .join("path")
-      .attr("stroke", (d) => color(d.type))
-      .attr("marker-end", (d) => `url(${new URL(`#arrow-${d.type}`, location)})`);
+    const selectedNodes = svg
+      .select('#nodes')
+      .selectAll('.node')
+      .data(data.nodes, d => d.id)
 
-    const node = svg
-      .append("g")
-      .attr("fill", "currentColor")
-      .attr("stroke-linecap", "round")
-      .attr("stroke-linejoin", "round")
-      .selectAll("g")
-      .data(nodes)
-      .join("g")
-      .call(drag(simulation));
+    const node = selectedNodes
+      .enter().append('g')
+      .attr('class', 'node')
 
-    node
-      .append("circle")
-      .attr("stroke", "white")
-      .attr("stroke-width", 1.5)
-      .attr("r", 4);
 
-    node
-      .append("text")
-      .attr("x", 8)
-      .attr("y", "0.31em")
-      .text((d) => d.id)
-      .clone(true)
-      .lower()
-      .attr("fill", "none")
-      .attr("stroke", "white")
-      .attr("stroke-width", 3);
+    node.append('circle')
+      .attr('r', 5)
+      .style('fill', 'steelblue')
 
-    simulation.on("tick", () => {
-      link.attr("d", linkArc);
-      node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+    node.append('text')
+      .attr('dx', 12)
+      .attr('dy', '.35em')
+      .text(d => d.id)
+
+    selectedNodes.exit().remove()
+
+    simulation.on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+
+      node.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
-    Object.assign(svg.node(), { scales: { color } });
-  })
+    return () => simulation.stop();
+  }, [data]);
 
+  return <svg ref={svgRef} width={width} height={height}></svg>;
+};
 
-
-  return <svg ref={ref} width={width} height={height} />
-
-}

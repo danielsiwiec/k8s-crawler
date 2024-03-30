@@ -1,4 +1,3 @@
-import * as d3 from "d3";
 import {useEffect, useState} from "react";
 import "./styles.css";
 import Graph from "./Graph";
@@ -6,20 +5,28 @@ import Graph from "./Graph";
 export default function App() {
   const [data, setData] = useState([]);
 
+  const getGraph = async () => {
+    const res = await fetch('/api/graph')
+    const data = await res.json()
+    setData(data)
+  }
+
   useEffect(() => {
-    fetch('/api/graph')
-      .then((res) => {
-        return res.json()
-      })
-      .then((data) => {
-        console.log(data)
-        setData(data)
-      })
+    const timer = setInterval(getGraph, 3000);
+    return () => clearInterval(timer);
   }, []);
+
+  const nodes = Array.from(
+    new Set(data.flatMap((l) => [l.source, l.target])),
+    (id) => ({id})
+  )
+
+  const links = data.map((d) => Object.create(d));
+  const types = Array.from(new Set(data.map((d) => d.type)));
 
   return (
     <div>
-      <Graph graph={data} />
+      <Graph data={{nodes, links, types}} />
     </div>
   );
 }
