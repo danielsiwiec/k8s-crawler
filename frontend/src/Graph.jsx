@@ -77,7 +77,7 @@ export default function Graph({data}) {
       .attr('dx', 12)
       .attr('dy', '.35em')
       .style('font-size', '12px')
-      .text(d => d.name)
+      .text(d => `${d.type}:${d.name}`)
 
     selectedNodes.exit().remove()
 

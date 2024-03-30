@@ -20,58 +20,58 @@ async def read_item():
 def start_crawler():
     state.nodes = [
         {
-            'name': 'pod-foo',
+            'name': 'foo',
             'type': 'pod',
-            'id': 'pod:pod-foo'
+            'id': 'pod:foo'
         },
         {
-            'name': 'pod-bar',
+            'name': 'bar',
             'type': 'pod',
-            'id': 'pod:pod-bar'
+            'id': 'pod:bar'
         },
         {
-            'name': 'service-foo',
+            'name': 'foo',
             'type': 'service',
-            'id': 'service:service-foo'
+            'id': 'service:foo'
         },
         {
-            'name': 'service-bar',
+            'name': 'bar',
             'type': 'service',
-            'id': 'service:service-bar'
+            'id': 'service:bar'
         },
         {
-            'name': 'depl-foo',
+            'name': 'foo',
             'type': 'deployment',
-            'id': 'deployment:deployment-foo'
+            'id': 'deployment:foo'
         },
         {
-            'name': 'depl-bar',
+            'name': 'bar',
             'type': 'deployment',
-            'id': 'deployment:deployment-bar'
+            'id': 'deployment:bar'
         },
         {
-            'name': 'depl-baz',
+            'name': 'baz',
             'type': 'deployment',
-            'id': 'deployment:deployment-baz'
+            'id': 'deployment:baz'
         },
     ]
 
     state.links = [
         {
-            'source': 'deployment:deployment-foo',
-            'target': 'pod:pod-foo'
+            'source': 'deployment:foo',
+            'target': 'pod:foo'
         },
         {
-            'source': 'service:service-foo',
-            'target': 'pod:pod-foo'
+            'source': 'service:foo',
+            'target': 'pod:foo'
         },
         {
-            'source': 'deployment:deployment-bar',
-            'target': 'pod:pod-bar'
+            'source': 'deployment:bar',
+            'target': 'pod:bar'
         },
         {
-            'source': 'service:service-bar',
-            'target': 'pod:pod-bar'
+            'source': 'service:bar',
+            'target': 'pod:bar'
         }
     ]
 
