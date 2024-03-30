@@ -1,4 +1,6 @@
-# Crawler
+# Kubernetes Crawler
+
+This app explores Kubernetes resource, creates a graph representing their dependencies and displays it using d3.
 
 ## Prerequisites
 
@@ -20,3 +22,6 @@ make backend
 ```shell
 make frontend
 ```
+
+## Demo app
+To populate the kubernetes environment with objects run `make install-otel-demo`
