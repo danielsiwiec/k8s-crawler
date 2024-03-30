@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import cast
 
 from kubernetes.client import V1Pod, V1Service, V1Deployment
 
@@ -21,17 +22,24 @@ class Link:
 
 class KubeResource(ABC):
 
-    @abstractmethod
     def to_node(self) -> Node:
-        pass
+        return Node(name=self.name(), type=self.type(), id=self.id())
+
+    def id(self) -> str:
+        return f'{self.type()}:{self.name()}'
 
     @abstractmethod
-    def id(self) -> str:
+    def name(self) -> str:
         pass
 
     @staticmethod
     @abstractmethod
-    def fetch(client: KubeClient, namespace: str) -> list['KubeResource']:
+    def type() -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def fetch_into(client: KubeClient, namespace: str, env: 'KubeEnvironment') -> list['KubeResource']:
         pass
 
 
@@ -40,14 +48,20 @@ class Pod(KubeResource):
     resource: V1Pod
 
     @staticmethod
-    def fetch(client: KubeClient, namespace: str) -> list['Pod']:
-        return [Pod(resource=item) for item in client.core_client.list_namespaced_pod(namespace).items]
+    def fetch_into(client: KubeClient, namespace: str, env: 'KubeEnvironment'):
+        pods = [Pod(resource=item) for item in client.core_client.list_namespaced_pod(namespace).items]
+        env.resources.extend(pods)
 
-    def to_node(self) -> Node:
-        return Node(name=self.resource.metadata.name, type='pod', id=f'pod:{self.resource.metadata.name}')
+    def name(self) -> str:
+        return self.resource.metadata.name
 
-    def id(self) -> str:
-        return f'pod:{self.resource.metadata.name}'
+    @staticmethod
+    def type() -> str:
+        return 'pod'
+
+    @staticmethod
+    def get_from(env: 'KubeEnvironment') -> list['Pod']:
+        return [cast('Pod', resource) for resource in env.resources if resource.type() == Pod.type()]
 
 
 @dataclass
@@ -55,14 +69,20 @@ class Deployment(KubeResource):
     resource: V1Deployment
 
     @staticmethod
-    def fetch(client: KubeClient, namespace: str) -> list['Deployment']:
-        return [Deployment(resource=item) for item in client.app_client.list_namespaced_deployment(namespace).items]
+    def fetch_into(client: KubeClient, namespace: str, env: 'KubeEnvironment'):
+        deployments = [Deployment(resource=item) for item in client.app_client.list_namespaced_deployment(namespace).items]
+        env.resources.extend(deployments)
 
-    def to_node(self) -> Node:
-        return Node(name=self.resource.metadata.name, type='deployment', id=f'deployment:{self.resource.metadata.name}')
+    def name(self) -> str:
+        return self.resource.metadata.name
 
-    def id(self) -> str:
-        return f'deployment:{self.resource.metadata.name}'
+    @staticmethod
+    def get_from(env: 'KubeEnvironment') -> list['Deployment']:
+        return [cast('Deployment', resource) for resource in env.resources if resource.type() == Deployment.type()]
+
+    @staticmethod
+    def type() -> str:
+        return 'deployment'
 
 
 @dataclass
@@ -70,14 +90,20 @@ class Service(KubeResource):
     resource: V1Service
 
     @staticmethod
-    def fetch(client: KubeClient, namespace: str) -> list['Service']:
-        return [Service(resource=item) for item in client.core_client.list_namespaced_service(namespace).items]
+    def fetch_into(client: KubeClient, namespace: str, env: 'KubeEnvironment'):
+        services = [Service(resource=item) for item in client.core_client.list_namespaced_service(namespace).items]
+        env.resources.extend(services)
 
-    def to_node(self) -> Node:
-        return Node(name=self.resource.metadata.name, type='service', id=f'service:{self.resource.metadata.name}')
+    def name(self) -> str:
+        return self.resource.metadata.name
 
-    def id(self) -> str:
-        return f'service:{self.resource.metadata.name}'
+    @staticmethod
+    def get_from(env: 'KubeEnvironment') -> list['Service']:
+        return [cast('Service', resource) for resource in env.resources if resource.type() == Service.type()]
+
+    @staticmethod
+    def type() -> str:
+        return 'service'
 
 
 class Relationship(ABC):
@@ -100,13 +126,12 @@ class PodToDeployment(Relationship):
 
     @staticmethod
     def find(env: 'KubeEnvironment') -> list['PodToDeployment']:
-        pod_deployment_links: list[PodToDeployment] = []
+        relationships: list[PodToDeployment] = []
 
-        for deployment in env.deployments:
-            matched_pods = [PodToDeployment(source=pod, target=deployment) for pod in env.pods if PodToDeployment.__pod_matches_deployment(pod, deployment)]
-            pod_deployment_links += matched_pods
+        for deployment in Deployment.get_from(env):
+            relationships += [PodToDeployment(source=pod, target=deployment) for pod in Pod.get_from(env) if PodToDeployment.__pod_matches_deployment(pod, deployment)]
 
-        return pod_deployment_links
+        return relationships
 
     @staticmethod
     def __pod_matches_deployment(pod: Pod, deployment: Deployment) -> bool:
@@ -120,13 +145,12 @@ class ServiceToPod(Relationship):
 
     @staticmethod
     def find(env: 'KubeEnvironment') -> list['ServiceToPod']:
-        pod_service_links: list[ServiceToPod] = []
+        relationships: list[ServiceToPod] = []
 
-        for service in env.services:
-            matched_pods = [ServiceToPod(source=pod, target=service) for pod in env.pods if ServiceToPod.__pod_matches_service(pod, service)]
-            pod_service_links += matched_pods
+        for service in Service.get_from(env):
+            relationships += [ServiceToPod(source=pod, target=service) for pod in Pod.get_from(env) if ServiceToPod.__pod_matches_service(pod, service)]
 
-        return pod_service_links
+        return relationships
 
     @staticmethod
     def __pod_matches_service(pod: Pod, service: Service) -> bool:
@@ -135,12 +159,7 @@ class ServiceToPod(Relationship):
 
 @dataclass
 class KubeEnvironment:
-    pods: list[Pod]
-    services: list[Service]
-    deployments: list[Deployment]
-
-    def resource(self) -> list[KubeResource]:
-        return self.pods + self.services + self.deployments
+    resources: list[KubeResource] = field(default_factory=list)
 
     def relationships(self) -> list[Relationship]:
         return ServiceToPod.find(self) + PodToDeployment.find(self)

@@ -10,12 +10,12 @@ class GraphState:
         self.links: list[Link] = []
 
     def update_from_env(self, env: KubeEnvironment):
-        self.nodes = [resource.to_node() for resource in env.resource()]
+        self.nodes = [resource.to_node() for resource in env.resources]
         self.links = [relationship.to_link() for relationship in env.relationships()]
 
     def serialize(self):
         return {
             'nodes': [asdict(node) for node in self.nodes],
-            'links': [asdict(node) for node in self.links],
+            'links': [asdict(link) for link in self.links],
             'types': {i.type for i in self.nodes}
         }
