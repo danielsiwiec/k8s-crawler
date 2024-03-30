@@ -1,3 +1,4 @@
+import time
 from dataclasses import asdict
 
 from fastapi import FastAPI
@@ -23,11 +24,13 @@ async def read_item():
 
 def start_crawler():
     client = KubeClient()
-    environment = crawl(namespace=registered_namespace, client=client)
-    state.nodes = environment.to_nodes()
+    while True:
+        environment = crawl(namespace=registered_namespace, client=client)
+        state.nodes = environment.to_nodes()
 
-    state.links = [asdict(i) for i in environment.to_links()]
-    state.types = {i['type'] for i in state.nodes}
+        state.links = [asdict(i) for i in environment.to_links()]
+        state.types = {i['type'] for i in state.nodes}
+        time.sleep(5)
 
 
 crawler_thread = threading.Thread(target=start_crawler)
