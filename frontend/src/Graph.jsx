@@ -7,12 +7,15 @@ export default function Graph({data}) {
   const height = 800;
 
   d3.select(svgRef.current)
+    .append("g").attr("id", "legend")
     .append("g").attr("id", "nodes")
     .append("g").attr("id", "links")
 
-  useEffect(() => {
-    if (!data) return;
 
+  useEffect(() => {
+    if (!data || !data.nodes ) return;
+
+    const color = d3.scaleOrdinal(data.types, d3.schemeTableau10)
     const svg = d3.select(svgRef.current)
 
     const simulation = d3
@@ -22,6 +25,26 @@ export default function Graph({data}) {
       .force('center', d3.forceCenter(width / 2, height / 2))
       .alpha(2)
       .alphaDecay(0.05);
+
+    const newLegends = svg.select('#legend')
+      .selectAll("circle")
+      .data(data.types)
+      .enter()
+
+    newLegends
+      .append('circle')
+      .attr('r', 5)
+      .attr('cx', 100)
+      .attr('cy', (d, i) => i * 20 + 100)
+      .attr("fill", color)
+
+    newLegends
+      .append('text')
+      .attr('x', 110)
+      .attr('y', (d, i) => i * 20 + 105)
+      .style('font-size', '12px')
+      .text(d => d)
+
 
     const selectedLinks = svg
       .select('#links')
@@ -48,13 +71,13 @@ export default function Graph({data}) {
 
     node.append('circle')
       .attr('r', 5)
-      .style('fill', 'steelblue')
+      .style("fill", d => color(d.type));
 
     node.append('text')
       .attr('dx', 12)
       .attr('dy', '.35em')
       .style('font-size', '12px')
-      .text(d => d.id)
+      .text(d => d.name)
 
     selectedNodes.exit().remove()
 

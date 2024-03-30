@@ -10,42 +10,72 @@ state = GraphState()
 
 @app.get("/api/graph")
 async def read_item():
-    return state.graph
+    return {
+        'nodes': state.nodes,
+        'links': state.links,
+        'types': state.types
+    }
 
 
 def start_crawler():
-    state.graph = [
+    state.nodes = [
         {
-            "source": "Microsoft",
-            "target": "Amazon",
-            "type": "licensing",
+            'name': 'pod-foo',
+            'type': 'pod',
+            'id': 'pod:pod-foo'
         },
         {
-            "source": "Microsoft",
-            "target": "HTC",
-            "type": "licensing",
+            'name': 'pod-bar',
+            'type': 'pod',
+            'id': 'pod:pod-bar'
         },
         {
-            "source": "Samsung",
-            "target": "Apple",
-            "type": "suit",
+            'name': 'service-foo',
+            'type': 'service',
+            'id': 'service:service-foo'
         },
         {
-            "source": "Motorola",
-            "target": "Apple",
-            "type": "suit",
+            'name': 'service-bar',
+            'type': 'service',
+            'id': 'service:service-bar'
         },
         {
-            "source": "NXD",
-            "target": "Tesla",
-            "type": "suit",
+            'name': 'depl-foo',
+            'type': 'deployment',
+            'id': 'deployment:deployment-foo'
         },
         {
-            "source": "NXD",
-            "target": "Apple",
-            "type": "suit",
+            'name': 'depl-bar',
+            'type': 'deployment',
+            'id': 'deployment:deployment-bar'
+        },
+        {
+            'name': 'depl-baz',
+            'type': 'deployment',
+            'id': 'deployment:deployment-baz'
         },
     ]
+
+    state.links = [
+        {
+            'source': 'deployment:deployment-foo',
+            'target': 'pod:pod-foo'
+        },
+        {
+            'source': 'service:service-foo',
+            'target': 'pod:pod-foo'
+        },
+        {
+            'source': 'deployment:deployment-bar',
+            'target': 'pod:pod-bar'
+        },
+        {
+            'source': 'service:service-bar',
+            'target': 'pod:pod-bar'
+        }
+    ]
+
+    state.types = {i['type'] for i in state.nodes}
 
 
 crawler_thread = threading.Thread(target=start_crawler)
