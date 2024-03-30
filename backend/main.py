@@ -3,8 +3,7 @@ import time
 
 from fastapi import FastAPI
 
-from models import KubeEnvironment
-from k8s import KubeClient
+from k8s import KubeClient, KubeEnvironment
 from state import GraphState
 
 app = FastAPI()
@@ -20,7 +19,7 @@ async def read_item():
 def start_crawler():
     client = KubeClient()
     while True:
-        environment = KubeEnvironment.discover(client=client, namespace=registered_namespace)
+        environment = KubeEnvironment.discover(kube_client=client, namespace=registered_namespace)
         state.update_from_env(env=environment)
         time.sleep(5)
 

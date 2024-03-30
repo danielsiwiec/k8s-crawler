@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
-from models import KubeEnvironment, Node, Link
+from k8s import KubeEnvironment
+from models import Node, Link
 
 
 class GraphState:
