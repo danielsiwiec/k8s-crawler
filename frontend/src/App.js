@@ -16,14 +16,6 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // const nodes = Array.from(
-  //   new Set(data.flatMap((l) => [l.source, l.target])),
-  //   (id) => ({id})
-  // )
-  //
-  // const links = data.map((d) => Object.create(d));
-  // const types = Array.from(new Set(data.map((d) => d.type)));
-
   return (
     <div>
       <Graph data={{nodes: data.nodes, links: data.links, types: data.types}} />

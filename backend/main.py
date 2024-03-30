@@ -1,4 +1,8 @@
+from dataclasses import asdict
+
 from fastapi import FastAPI
+
+from crawler import crawl
 from k8s import KubeClient
 from state import GraphState
 import threading
@@ -18,68 +22,13 @@ async def read_item():
 
 
 def start_crawler():
-    state.nodes = [
-        {
-            'name': 'foo',
-            'type': 'pod',
-            'id': 'pod:foo'
-        },
-        {
-            'name': 'bar',
-            'type': 'pod',
-            'id': 'pod:bar'
-        },
-        {
-            'name': 'foo',
-            'type': 'service',
-            'id': 'service:foo'
-        },
-        {
-            'name': 'bar',
-            'type': 'service',
-            'id': 'service:bar'
-        },
-        {
-            'name': 'foo',
-            'type': 'deployment',
-            'id': 'deployment:foo'
-        },
-        {
-            'name': 'bar',
-            'type': 'deployment',
-            'id': 'deployment:bar'
-        },
-        {
-            'name': 'baz',
-            'type': 'deployment',
-            'id': 'deployment:baz'
-        },
-    ]
+    client = KubeClient()
+    environment = crawl(namespace=registered_namespace, client=client)
+    state.nodes = environment.to_nodes()
 
-    state.links = [
-        {
-            'source': 'deployment:foo',
-            'target': 'pod:foo'
-        },
-        {
-            'source': 'service:foo',
-            'target': 'pod:foo'
-        },
-        {
-            'source': 'deployment:bar',
-            'target': 'pod:bar'
-        },
-        {
-            'source': 'service:bar',
-            'target': 'pod:bar'
-        }
-    ]
-
+    state.links = [asdict(i) for i in environment.to_links()]
     state.types = {i['type'] for i in state.nodes}
 
 
 crawler_thread = threading.Thread(target=start_crawler)
 crawler_thread.start()
-
-# client = KubeClient()
-# client.list_pods(namespace=registered_namespace)

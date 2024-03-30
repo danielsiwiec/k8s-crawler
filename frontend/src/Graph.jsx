@@ -20,8 +20,8 @@ export default function Graph({data}) {
 
     const simulation = d3
       .forceSimulation(data.nodes)
-      .force('link', d3.forceLink(data.links).id(d => d.id).distance(50))
-      .force('charge', d3.forceManyBody().strength(-200))
+      .force('link', d3.forceLink(data.links).id(d => d.id).distance(20))
+      .force('charge', d3.forceManyBody().strength(-10))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .alpha(2)
       .alphaDecay(0.05);
