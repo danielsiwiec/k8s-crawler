@@ -17,7 +17,7 @@ export default function Graph({data}) {
 
     const simulation = d3
       .forceSimulation(data.nodes)
-      .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
+      .force('link', d3.forceLink(data.links).id(d => d.id).distance(50))
       .force('charge', d3.forceManyBody().strength(-200))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .alpha(2)
@@ -53,6 +53,7 @@ export default function Graph({data}) {
     node.append('text')
       .attr('dx', 12)
       .attr('dy', '.35em')
+      .style('font-size', '12px')
       .text(d => d.id)
 
     selectedNodes.exit().remove()
