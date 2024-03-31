@@ -18,5 +18,5 @@ class GraphState:
         return {
             'nodes': [asdict(node) for node in self.nodes],
             'links': [asdict(link) for link in self.links],
-            'types': {i.type for i in self.nodes}
+            'types': list({i.type for i in self.nodes})
         }

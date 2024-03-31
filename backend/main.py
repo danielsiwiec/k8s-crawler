@@ -1,11 +1,9 @@
-import threading
-import time
+import asyncio
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-from base import KubeClient
-from k8s import KubeEnvironment
 from extensions import *
+from k8s import KubeEnvironment
 from state import GraphState
 
 app = FastAPI()
@@ -13,18 +11,20 @@ registered_namespace = "otel-demo"
 state = GraphState()
 
 
-@app.get("/api/graph")
-async def read_item():
-    return state.serialize()
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    try:
+        previous = {}
+        client = KubeClient()
+        await websocket.accept()
+        while True:
+            environment = KubeEnvironment.discover(kube_client=client, namespace=registered_namespace)
+            state.update_from_env(env=environment)
+            payload = state.serialize()
+            if payload != previous:
+                await websocket.send_json(payload)
+                previous = payload
+            await asyncio.sleep(2)
 
-
-def start_crawler():
-    client = KubeClient()
-    while True:
-        environment = KubeEnvironment.discover(kube_client=client, namespace=registered_namespace)
-        state.update_from_env(env=environment)
-        time.sleep(5)
-
-
-crawler_thread = threading.Thread(target=start_crawler)
-crawler_thread.start()
+    except WebSocketDisconnect:
+        print("Client disconnected")

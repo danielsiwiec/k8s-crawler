@@ -1,6 +1,6 @@
 # Kubernetes Crawler
 
-This app explores Kubernetes resource, creates a graph representing their dependencies and displays it using d3.
+This app explores Kubernetes resources, creates a graph representing their dependencies and displays it using d3. Data is sent to the frontend over WebSockets.
 
 ## Prerequisites
 

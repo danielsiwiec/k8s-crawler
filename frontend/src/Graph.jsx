@@ -45,8 +45,6 @@ export default function Graph({data}) {
       .style('font-size', '12px')
       .text(d => d)
 
-    console.log(data.links)
-
     const selectedLinks = svg
       .select('#links')
       .selectAll('.link')
