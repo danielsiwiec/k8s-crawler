@@ -1,39 +1,8 @@
 from dataclasses import dataclass
 from typing import Type
 
-from kubernetes.client import V1Pod, V1Service, V1Deployment
-
-from base import KubeResource, KubeClient, get_type, KubeRelationship
-
-
-@dataclass
-class Pod(KubeResource):
-    type = 'pod'
-    resource: V1Pod
-
-    @staticmethod
-    def find(kube_client: KubeClient, namespace: str) -> list['Pod']:
-        return [Pod(resource=item) for item in kube_client.core_client.list_namespaced_pod(namespace).items]
-
-
-@dataclass
-class Deployment(KubeResource):
-    type = 'deployment'
-    resource: V1Deployment
-
-    @staticmethod
-    def find(kube_client: KubeClient, namespace: str) -> list['Deployment']:
-        return [Deployment(resource=item) for item in kube_client.app_client.list_namespaced_deployment(namespace).items]
-
-
-@dataclass
-class Service(KubeResource):
-    type = 'service'
-    resource: V1Service
-
-    @staticmethod
-    def find(kube_client: KubeClient, namespace: str):
-        return [Service(resource=item) for item in kube_client.core_client.list_namespaced_service(namespace).items]
+from base import KubeResource, get_type, KubeRelationship
+from extensions.resources import Pod, Deployment, Service
 
 
 @dataclass

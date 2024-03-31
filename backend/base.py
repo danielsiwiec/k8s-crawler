@@ -15,6 +15,10 @@ class KubeResource(ABC):
         return self.resource.metadata.name
 
     @property
+    def type(self) -> str:
+        return str(self.resource.__class__.__name__)
+
+    @property
     def id(self) -> str:
         return f'{self.type}:{self.name}'
 

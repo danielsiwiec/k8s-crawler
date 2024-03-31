@@ -3,6 +3,7 @@ import time
 
 from fastapi import FastAPI
 
+from base import KubeClient
 from k8s import KubeEnvironment
 from extensions import *
 from state import GraphState
