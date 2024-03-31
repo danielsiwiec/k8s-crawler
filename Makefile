@@ -14,3 +14,7 @@ install:
 .PHONY: install-otel-demo
 install-otel-demo:
 	helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts && helm upgrade --install my-otel-demo open-telemetry/opentelemetry-demo -n otel-demo --create-namespace
+
+.PHONY: uninstall-otel-demo
+uninstall-otel-demo:
+	helm delete my-otel-demo -n otel-demo
