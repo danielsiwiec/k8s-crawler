@@ -3,8 +3,8 @@ import * as d3 from 'd3';
 
 export default function Graph({data}) {
   const svgRef = useRef(null);
-  const width = 1500;
-  const height = 800;
+  const width = 1600;
+  const height = 1000;
 
   d3.select(svgRef.current)
     .append("g").attr("id", "legend")
@@ -20,8 +20,8 @@ export default function Graph({data}) {
 
     const simulation = d3
       .forceSimulation(data.nodes)
-      .force('link', d3.forceLink(data.links).id(d => d.id).distance(20))
-      .force('charge', d3.forceManyBody().strength(-10))
+      .force('link', d3.forceLink(data.links).id(d => d.id).distance(30))
+      .force('charge', d3.forceManyBody().strength(-30))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .alpha(2)
       .alphaDecay(0.05);
