@@ -45,11 +45,12 @@ export default function Graph({data}) {
       .style('font-size', '12px')
       .text(d => d)
 
+    console.log(data.links)
 
     const selectedLinks = svg
       .select('#links')
       .selectAll('.link')
-      .data(data.links)
+      .data(data.links, d => d.source.id + d.target.id)
 
     const link = selectedLinks
       .enter()
