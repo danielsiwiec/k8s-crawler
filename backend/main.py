@@ -1,6 +1,7 @@
 import asyncio
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi_utils.tasks import repeat_every
 
 from extensions import *
 from k8s import KubeEnvironment
@@ -9,17 +10,16 @@ from state import GraphState
 app = FastAPI()
 registered_namespace = "otel-demo"
 state = GraphState()
+client = KubeClient()
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     try:
         previous = {}
-        client = KubeClient()
+
         await websocket.accept()
         while True:
-            environment = KubeEnvironment.discover(kube_client=client, namespace=registered_namespace)
-            state.update_from_env(env=environment)
             payload = state.serialize()
             if payload != previous:
                 await websocket.send_json(payload)
@@ -28,3 +28,15 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         print("Client disconnected")
+
+
+@app.get("/api/graph")
+async def read_item():
+    return state.serialize()
+
+
+@app.on_event("startup")
+@repeat_every(seconds=2)  # 1 hour
+def remove_expired_tokens_task() -> None:
+    environment = KubeEnvironment.discover(kube_client=client, namespace=registered_namespace)
+    state.update_from_env(env=environment)
